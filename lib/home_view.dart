@@ -303,7 +303,8 @@ class HomeViewState extends State<HomeView> {
                     decoration: BoxDecoration(
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.2),
+                          color: const Color.fromRGBO(
+                              0, 0, 0, 0.2), // Replace withOpacity
                           blurRadius: 10,
                           offset: const Offset(0, 5),
                         ),
