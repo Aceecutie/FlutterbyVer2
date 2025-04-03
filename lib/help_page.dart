@@ -1,12 +1,23 @@
 import 'package:flutter/material.dart';
 
 class HelpPage extends StatelessWidget {
-  const HelpPage({super.key});
+  final VoidCallback onBackToHome;
+
+  const HelpPage({super.key, required this.onBackToHome});
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
-      body: Padding(
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text("Help"),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () {
+            onBackToHome(); // Navigate back to Home Page
+          },
+        ),
+      ),
+      body: const Padding(
         padding: EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,

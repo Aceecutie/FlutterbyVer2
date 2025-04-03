@@ -3,12 +3,23 @@ import 'dart:io';
 
 class HistoryPage extends StatelessWidget {
   final List<Map<String, dynamic>> history;
+  final VoidCallback onBackToHome;
 
-  const HistoryPage({super.key, required this.history});
+  const HistoryPage(
+      {super.key, required this.history, required this.onBackToHome});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(
+        title: const Text("History"),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () {
+            onBackToHome(); // Navigate back to Home Page
+          },
+        ),
+      ),
       body: history.isEmpty
           ? const Center(
               child: Text(
@@ -23,12 +34,8 @@ class HistoryPage extends StatelessWidget {
                 final String? imagePath = entry["image"];
                 final String prediction = entry["prediction"];
 
-                // Extract the full timestamp (date and time) from the prediction
-                final String timestamp = prediction.split(": ")[0];
-
                 return GestureDetector(
                   onTap: () {
-                    // Navigate to the detail page when the image is clicked
                     Navigator.push(
                       context,
                       MaterialPageRoute(
@@ -64,7 +71,7 @@ class HistoryPage extends StatelessWidget {
                           Padding(
                             padding: const EdgeInsets.all(8.0),
                             child: Text(
-                              timestamp, // Display the full timestamp (date and time)
+                              prediction,
                               textAlign: TextAlign.center,
                               style: const TextStyle(
                                 fontSize: 16,

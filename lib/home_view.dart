@@ -1,6 +1,6 @@
 import 'dart:io';
 import 'dart:convert';
-import 'dart:developer'; // Import for logging
+import 'dart:developer';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:carousel_slider/carousel_slider.dart';
@@ -9,6 +9,76 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'about_page.dart';
 import 'history_page.dart';
 import 'help_page.dart';
+
+void main() {
+  runApp(const MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      home: const LoadingScreenWrapper(),
+    );
+  }
+}
+
+class LoadingScreenWrapper extends StatefulWidget {
+  const LoadingScreenWrapper({super.key});
+
+  @override
+  State<LoadingScreenWrapper> createState() => _LoadingScreenWrapperState();
+}
+
+class _LoadingScreenWrapperState extends State<LoadingScreenWrapper> {
+  @override
+  void initState() {
+    super.initState();
+    _navigateToHome();
+  }
+
+  Future<void> _navigateToHome() async {
+    await Future.delayed(const Duration(seconds: 15)); // Adjust the time here
+    if (!mounted) return;
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (context) => const HomeView()),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return const LoadingScreen();
+  }
+}
+
+class LoadingScreen extends StatelessWidget {
+  const LoadingScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Image.asset(
+              'assets/images/chick2.png', // Replace with your image path
+              height: 150, // Adjust the size as needed
+            ),
+            const SizedBox(height: 20),
+            const CircularProgressIndicator(
+              color: Colors.purple, // Optional: Customize the color
+            ), // Loading indicator
+          ],
+        ),
+      ),
+    );
+  }
+}
 
 class HomeView extends StatefulWidget {
   const HomeView({super.key});
@@ -32,9 +102,28 @@ class HomeViewState extends State<HomeView> {
 
   List<Widget> get _widgetOptions => <Widget>[
         _buildHomePage(),
-        HistoryPage(history: _history),
-        const AboutPage(),
-        const HelpPage(),
+        HistoryPage(
+          history: _history,
+          onBackToHome: () {
+            setState(() {
+              _selectedIndex = 0;
+            });
+          },
+        ),
+        AboutPage(
+          onBackToHome: () {
+            setState(() {
+              _selectedIndex = 0;
+            });
+          },
+        ),
+        HelpPage(
+          onBackToHome: () {
+            setState(() {
+              _selectedIndex = 0;
+            });
+          },
+        ),
       ];
 
   @override
@@ -69,9 +158,9 @@ class HomeViewState extends State<HomeView> {
 
   void _generateDummyPrediction() {
     final List<String> dummyPredictions = [
-      "Chicken breast is defect-free.",
-      "Chicken breast has minor defects.",
-      "Chicken breast is heavily damaged.",
+      "Chicken breast is Consumable.",
+      "Chicken breast is Half Consumable.",
+      "Chicken breast is Not Consumable.",
       "Invalid: Not a chicken breast.",
     ];
 
@@ -150,7 +239,7 @@ class HomeViewState extends State<HomeView> {
         itemBuilder: (context, index) {
           final feature = features[index];
           return Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8.0),
+            padding: const EdgeInsets.symmetric(vertical: 8.0),
             child: Card(
               elevation: 4,
               shape: RoundedRectangleBorder(
@@ -200,19 +289,35 @@ class HomeViewState extends State<HomeView> {
                 height: 200.0,
                 autoPlay: true,
                 enlargeCenterPage: true,
+                viewportFraction: 0.9, // Adjust the width of the carousel items
+                aspectRatio: 16 / 9,
+                autoPlayInterval: const Duration(seconds: 3),
+                autoPlayAnimationDuration: const Duration(milliseconds: 800),
+                autoPlayCurve: Curves.fastOutSlowIn,
               ),
               items: _carouselImages.map((imagePath) {
                 log("Loading image: $imagePath"); // Debug log
                 return ClipRRect(
-                  borderRadius: BorderRadius.circular(20),
-                  child: Image.asset(
-                    imagePath,
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) {
-                      return const Center(
-                        child: Text("Failed to load image."),
-                      );
-                    },
+                  borderRadius: BorderRadius.circular(20), // Rounded corners
+                  child: Container(
+                    decoration: BoxDecoration(
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.2),
+                          blurRadius: 10,
+                          offset: const Offset(0, 5),
+                        ),
+                      ],
+                    ),
+                    child: Image.asset(
+                      imagePath,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) {
+                        return const Center(
+                          child: Text("Failed to load image."),
+                        );
+                      },
+                    ),
                   ),
                 );
               }).toList(),
@@ -278,11 +383,20 @@ class HomeViewState extends State<HomeView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text("Check-A-Doodle-Doo"),
-        centerTitle: true,
-      ),
-      body: _widgetOptions[_selectedIndex],
+      appBar: _selectedIndex == 0 // Show AppBar with back arrow only on Home
+          ? AppBar(
+              leading: IconButton(
+                icon: const Icon(Icons.arrow_back),
+                onPressed: () async {
+                  final shouldExit = await _showExitConfirmationDialog();
+                  if (shouldExit ?? false) {
+                    exit(0); // Exit the app
+                  }
+                },
+              ),
+            )
+          : null, // No AppBar for other pages
+      body: _widgetOptions[_selectedIndex], // Each page handles its own content
       floatingActionButton: _selectedIndex == 0
           ? FloatingActionButton(
               onPressed: () {
@@ -292,34 +406,66 @@ class HomeViewState extends State<HomeView> {
               child: const Icon(Icons.camera_alt, color: Colors.white),
             )
           : null,
-      bottomNavigationBar: BottomNavigationBar(
-        items: const <BottomNavigationBarItem>[
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home),
-            label: 'Home',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.history),
-            label: 'History',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.info),
-            label: 'About',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.help),
-            label: 'Help',
-          ),
-        ],
-        currentIndex: _selectedIndex,
-        selectedItemColor: Colors.purple,
-        unselectedItemColor: Colors.grey,
-        onTap: (int index) {
-          setState(() {
-            _selectedIndex = index;
-          });
-        },
+      bottomNavigationBar: Theme(
+        data: Theme.of(context).copyWith(
+          splashFactory: NoSplash.splashFactory, // Disable ripple effect
+          highlightColor: Colors.transparent, // Disable highlight effect
+        ),
+        child: BottomNavigationBar(
+          items: const <BottomNavigationBarItem>[
+            BottomNavigationBarItem(
+              icon: Icon(Icons.home),
+              label: 'Home',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.history),
+              label: 'History',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.info),
+              label: 'About',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.help),
+              label: 'Help',
+            ),
+          ],
+          currentIndex: _selectedIndex,
+          selectedItemColor: Colors.purple,
+          unselectedItemColor: Colors.grey,
+          onTap: (int index) {
+            setState(() {
+              _selectedIndex = index;
+            });
+          },
+        ),
       ),
+    );
+  }
+
+  Future<bool?> _showExitConfirmationDialog() async {
+    return showDialog<bool>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text("Exit App"),
+          content: const Text("Are you sure you want to exit the app?"),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop(false); // Stay in the app
+              },
+              child: const Text("Cancel"),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop(true); // Exit the app
+              },
+              child: const Text("Exit"),
+            ),
+          ],
+        );
+      },
     );
   }
 

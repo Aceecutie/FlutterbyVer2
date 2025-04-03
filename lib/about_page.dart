@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 
 class AboutPage extends StatelessWidget {
-  const AboutPage({super.key});
+  final VoidCallback onBackToHome;
+
+  const AboutPage({super.key, required this.onBackToHome});
 
   @override
   Widget build(BuildContext context) {
@@ -21,6 +23,15 @@ class AboutPage extends StatelessWidget {
     ];
 
     return Scaffold(
+      appBar: AppBar(
+        title: const Text("About"),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () {
+            onBackToHome(); // Navigate back to Home Page
+          },
+        ),
+      ),
       body: SingleChildScrollView(
         child: Center(
           child: Padding(
